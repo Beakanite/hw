@@ -1,0 +1,440 @@
+2.5:
+
+import numpy as np
+import skfuzzy as fuzz
+from skfuzzy import control as ctrl
+
+Temp = ctrl.Antecedent(np.arange(15, 35.1, 0.1), 'temperature') 
+Humid = ctrl.Antecedent(np.arange(10, 90.1, 0.1), 'humidity') 
+People = ctrl.Antecedent(np.arange(1, 10.1, 1), 'people') 
+
+FS = ctrl.Consequent(np.arange(0, 10.1, 1), 'fan speed')  
+CL = ctrl.Consequent(np.arange(0, 10.1, 0.1), 'cooling level') 
+
+Temp['cold'] = fuzz.gaussmf(Temp.universe, 15, 2)
+Temp['cool'] = fuzz.gaussmf(Temp.universe, 25, 2)
+Temp['comfortable'] = fuzz.gaussmf(Temp.universe, 27, 2)
+Temp['warm'] = fuzz.gaussmf(Temp.universe, 30, 2)
+Temp['hot'] = fuzz.trapmf(Temp.universe, [31, 32, 35, 35])
+
+Humid['low'] = fuzz.gaussmf(Humid.universe, 10, 5)
+Humid['medium'] = fuzz.gaussmf(Humid.universe, 40, 5)
+Humid['high'] = fuzz.trapmf(Humid.universe, [70, 75, 90, 90])
+
+People['few'] = fuzz.trimf(People.universe, [1, 1, 4])
+People['moderate'] = fuzz.trimf(People.universe, [3, 5, 7])
+People['many'] = fuzz.trimf(People.universe, [6, 10, 10])
+
+FS['low'] = fuzz.trimf(FS.universe, [0, 0, 2])
+FS['medium'] = fuzz.trimf(FS.universe, [0, 2, 4])
+FS['high'] = fuzz.trimf(FS.universe, [3, 4, 5])
+
+CL['low'] = fuzz.trimf(CL.universe, [0, 0, 2])
+CL['medium'] = fuzz.trimf(CL.universe, [0, 2, 4])
+CL['high'] = fuzz.trimf(CL.universe, [3, 4, 5])
+
+rule1 = ctrl.Rule(Temp['cold'] , FS['low'])
+rule2 = ctrl.Rule(Temp['cool'] , FS['low'])
+rule3 = ctrl.Rule(Temp['comfortable'] , FS['medium'])
+rule4 = ctrl.Rule(Temp['warm'] , FS['high'])
+rule5 = ctrl.Rule(Temp['hot'] , FS['high'])
+
+rule6 =ctrl.Rule(Temp['cold'] , CL['low'])
+rule7 =ctrl.Rule(Temp['cool'] , CL['low'])
+rule8 =ctrl.Rule(Temp['comfortable'] , CL['medium'])
+rule9 =ctrl.Rule(Temp['warm'] , CL['high'])
+rule10 =ctrl.Rule(Temp['hot'] , CL['high'])
+
+rule11 =ctrl.Rule(Humid['low'], FS['low'])
+rule12 =ctrl.Rule(Humid['medium'], FS['medium'])
+rule13 =ctrl.Rule(Humid['high'], FS['high'])
+
+rule14 =ctrl.Rule(People['few'], FS['low'])
+rule15 =ctrl.Rule(People['moderate'], FS['medium'])
+rule16 =ctrl.Rule(People['many'], FS['high'])
+
+rule17 = ctrl.Rule(Temp['hot'] & Humid['high'] & People['many'], [CL['high'],FS['high']])
+rule18 = ctrl.Rule(Temp['comfortable'] & Humid['medium'] & People['moderate'], [CL['medium'],FS['medium']])
+rule19 = ctrl.Rule(Temp['cool'] & Humid['low'] & People['few'], [CL['low'],FS['low']])
+
+fanspeed_ctrl = ctrl.ControlSystem([rule1, rule2, rule3, rule4, rule5, rule6,rule7, rule8, rule9, rule10, rule11, rule12, rule13, rule14, rule15, rule16, rule17, rule18, rule19])
+fanspeed= ctrl.ControlSystemSimulation(fanspeed_ctrl)
+fanspeed.input['temperature'] = 32
+fanspeed.input['humidity'] = 75
+fanspeed.input['people'] = 10
+fanspeed.compute()
+print(fanspeed.output['cooling level'])
+print(fanspeed.output['fan speed'])
+FS.view(sim=fanspeed)
+CL.view(sim=fanspeed)
+
+
+
+2.6:
+
+import numpy as np
+import skfuzzy as fuzz
+from skfuzzy import control as ctrl
+
+Weight = ctrl.Antecedent(np.arange(0, 100.1, 0.1), 'weight')
+FT = ctrl.Antecedent(np.arange(0, 10.1, 0.1), 'food type')
+Temp = ctrl.Antecedent(np.arange(0, 60.1, 0.1), 'temperature')
+
+CT = ctrl.Consequent(np.arange(0, 10.1, 0.1), 'cooking time')
+PL = ctrl.Consequent(np.arange(0, 10.1, 0.1), 'power level')
+
+Weight['light'] = fuzz.gaussmf(Weight.universe, 0, 10)
+Weight['medium'] = fuzz.gaussmf(Weight.universe, 50, 100)
+Weight['heavy'] = fuzz.gaussmf(Weight.universe, 100, 100)
+
+FT['soft'] = fuzz.gaussmf(FT.universe, 0, 1)
+FT['medium'] = fuzz.gaussmf(FT.universe, 5, 1)
+FT['hard'] = fuzz.gaussmf(FT.universe, 10, 1)
+
+Temp['cold'] = fuzz.gaussmf(Temp.universe, 0, 5)
+Temp['warm'] = fuzz.gaussmf(Temp.universe, 25, 5)
+Temp['hot'] = fuzz.gaussmf(Temp.universe, 50, 5)
+
+CT['short'] = fuzz.gaussmf(CT.universe, 0, 5)
+CT['medium'] = fuzz.gaussmf(CT.universe, 5, 5)
+CT['long'] = fuzz.gaussmf(CT.universe, 10, 5)
+
+PL['low'] = fuzz.gaussmf(PL.universe, 3, 1)
+PL['medium'] = fuzz.gaussmf(PL.universe, 6, 1)
+PL['high'] = fuzz.gaussmf(PL.universe, 10, 1)
+
+rule1 = ctrl.Rule(Weight['light'], CT['short'])
+rule2 = ctrl.Rule(Weight['medium'], CT['medium'])
+rule3 = ctrl.Rule(Weight['heavy'], CT['long'])
+
+rule4 = ctrl.Rule(FT['soft'], PL['low'])
+rule5 = ctrl.Rule(FT['medium'], PL['medium'])
+rule6 = ctrl.Rule(FT['hard'], PL['high'])
+
+rule7 = ctrl.Rule(Temp['cold'], CT['long'])
+rule8 = ctrl.Rule(Temp['warm'], CT['medium'])
+rule9 = ctrl.Rule(Temp['hot'], CT['short'])
+
+rule10 = ctrl.Rule(Weight['heavy'] & FT['hard'] & Temp['cold'], [CT['long'], PL['high']])
+rule11 = ctrl.Rule(Weight['medium'] & FT['soft'] & Temp['warm'], [CT['medium'], PL['low']])
+rule12 = ctrl.Rule(Weight['light'] & FT['medium'] & Temp['hot'], [CT['short'], PL['medium']])
+
+cooking_ctrl = ctrl.ControlSystem([rule1, rule2, rule3, rule4, rule5, rule6, rule7, rule8, rule9, rule10, rule11, rule12])
+cooking = ctrl.ControlSystemSimulation(cooking_ctrl)
+
+cooking.input['weight'] = 30  
+cooking.input['food type'] = 2      
+cooking.input['temperature'] = 20     
+cooking.compute()
+print(cooking.output['cooking time'])
+print(cooking.output['power level'])
+PL.view(sim=cooking)
+CT.view(sim=cooking)
+
+2.7
+
+import numpy as np
+import skfuzzy as fuzz
+from skfuzzy import control as ctrl
+
+FT=ctrl.Antecedent(np.arange(1,10.1,0.1),'Food Type')
+FW=ctrl.Antecedent(np.arange(1,10.1,0.1),'Food Weight')
+IT=ctrl.Antecedent(np.arange(0, 60.1, 10),'Initial Temperature')
+WC=ctrl.Antecedent(np.arange(1,10.1,0.1),'Water Content')
+
+CT = ctrl.Consequent(np.arange(0, 10.1, 0.1), 'Cooking Time')
+HL = ctrl.Consequent(np.arange(30, 100.1, 10), 'Heat Level')
+
+FT['soft'] = fuzz.trimf(FT.universe, [0, 2, 4])
+FT['medium'] = fuzz.trimf(FT.universe, [3, 5, 7])
+FT['hard'] = fuzz.trimf(FT.universe, [6, 8, 10])
+
+FW['light'] = fuzz.trimf(FW.universe, [0, 2, 4])
+FW['medium'] = fuzz.trimf(FW.universe, [3, 5, 7])
+FW['heavy'] = fuzz.trimf(FW.universe, [6, 8, 10])
+
+IT['cold'] = fuzz.trimf(IT.universe, [0 , 10 , 20])
+IT['warm'] = fuzz.trimf(IT.universe, [20 , 30 , 40])
+IT['hot'] = fuzz.trimf(IT.universe, [40, 50 , 60])
+
+WC['low'] = fuzz.trimf(WC.universe, [0, 2, 4])
+WC['medium'] = fuzz.trimf(WC.universe, [3, 5, 7])
+WC['high'] = fuzz.trimf(WC.universe, [6, 8, 10])
+
+CT['short'] = fuzz.trimf(CT.universe, [0, 2, 4])
+CT['medium'] = fuzz.trimf(CT.universe, [3, 5, 7])
+CT['long'] = fuzz.trimf(CT.universe, [6, 8, 10])
+
+HL['low'] = fuzz.trimf(HL.universe, [30, 40 , 50])
+HL['medium'] = fuzz.trimf(HL.universe, [50,70,80])
+HL['high'] = fuzz.trimf(HL.universe, [80,90, 100])
+
+rule1 = ctrl.Rule(FT['soft'] & FW['light'], CT['short'])
+rule2 = ctrl.Rule(FT['medium'] & FW['light'], CT['medium'])
+rule3 = ctrl.Rule(FT['hard'] & FW['light'], CT['long'])
+rule4 = ctrl.Rule(FT['soft'] & FW['medium'], CT['medium'])
+rule5 = ctrl.Rule(FT['medium'] & FW['medium'], CT['medium'])
+rule6 = ctrl.Rule(FT['hard'] & FW['medium'], CT['long'])
+rule7 = ctrl.Rule(FT['soft'] & FW['heavy'], CT['medium'])
+rule8 = ctrl.Rule(FT['medium'] & FW['heavy'], CT['long'])
+rule9 = ctrl.Rule(FT['hard'] & FW['heavy'], CT['long'])
+
+rule10 = ctrl.Rule(IT['cold'] & WC['low'], CT['medium'])
+rule11 = ctrl.Rule(IT['warm'] & WC['low'], CT['medium'])
+rule12 = ctrl.Rule(IT['hot'] & WC['low'], CT['short'])
+rule13 = ctrl.Rule(IT['cold'] & WC['medium'], CT['long'])
+rule14 = ctrl.Rule(IT['warm'] & WC['medium'], CT['medium'])
+rule15 = ctrl.Rule(IT['hot'] & WC['medium'], CT['medium'])
+rule16 = ctrl.Rule(IT['cold'] & WC['high'], CT['long'])
+rule17 = ctrl.Rule(IT['warm'] & WC['high'], CT['long'])
+rule18 = ctrl.Rule(IT['hot'] & WC['high'], CT['medium'])
+
+rule19 = ctrl.Rule(FT['soft'] & FW['light'], HL['low'])
+rule20= ctrl.Rule(FT['medium'] & FW['light'], HL['medium'])
+rule21 = ctrl.Rule(FT['hard'] & FW['light'], HL['medium'])
+rule22 = ctrl.Rule(FT['soft'] & FW['medium'], HL['medium'])
+rule23 = ctrl.Rule(FT['medium'] & FW['medium'], HL['medium'])
+rule24 = ctrl.Rule(FT['hard'] & FW['medium'], HL['high'])
+rule25 = ctrl.Rule(FT['soft'] & FW['heavy'], HL['medium'])
+rule26 = ctrl.Rule(FT['medium'] & FW['heavy'], HL['high'])
+rule27 = ctrl.Rule(FT['hard'] & FW['heavy'], HL['high'])
+
+rule28 = ctrl.Rule(IT['cold'] & WC['low'], HL['high'])
+rule29 = ctrl.Rule(IT['warm'] & WC['low'], HL['medium'])
+rule30 = ctrl.Rule(IT['hot'] & WC['low'], HL['low'])
+rule31 = ctrl.Rule(IT['cold'] & WC['medium'], HL['medium'])
+rule32 = ctrl.Rule(IT['warm'] & WC['medium'], HL['medium'])
+rule33 = ctrl.Rule(IT['hot'] & WC['medium'], HL['medium'])
+rule34 = ctrl.Rule(IT['cold'] & WC['high'], HL['high'])
+rule35 = ctrl.Rule(IT['warm'] & WC['high'], HL['high'])
+rule36 = ctrl.Rule(IT['hot'] & WC['high'], HL['medium'])
+
+
+
+cooking_ctrl = ctrl.ControlSystem([rule1, rule2, rule3, rule4, rule5, rule6, rule7, rule8, rule9,
+rule10, rule11, rule12, rule13, rule14, rule15, rule16, rule17, rule18,
+rule19, rule20, rule21, rule22, rule23, rule24, rule25, rule26, rule27,
+rule28, rule29, rule30, rule31, rule32, rule33, rule34, rule35, rule36])
+cooking = ctrl.ControlSystemSimulation(cooking_ctrl)
+
+cooking.input['Food Type'] = 5
+cooking.input['Food Weight'] = 7
+cooking.input['Initial Temperature'] = 30
+cooking.input['Water Content'] = 6
+cooking.compute()
+print(f"Cooking Time: {cooking.output['Cooking Time']}")
+print(f"Heat Level: {cooking.output['Heat Level']}")
+CT.view(sim=cooking)
+HL.view(sim=cooking)
+
+2.8
+
+import numpy as np
+import skfuzzy as fuzz
+from skfuzzy import control as ctrl
+
+HR = ctrl.Antecedent(np.arange(50, 130.1, 0.1), 'Heart Rate')
+BP = ctrl.Antecedent(np.arange(80, 140.1, 0.1), 'Blood Pressure')
+BT = ctrl.Antecedent(np.arange(35, 41.1, 0.1), 'Body Temperature')
+OS = ctrl.Antecedent(np.arange(80, 100.1, 0.1), 'Oxygen Saturation')
+BSL = ctrl.Antecedent(np.arange(60, 140.1, 0.1), 'Blood Sugar Level')
+
+Lieu= ctrl.Consequent(np.arange(0, 10.1, 0.1), 'Lieu')
+Mach= ctrl.Consequent(np.arange(0, 10.1, 0.1), 'Mach')
+Oxy= ctrl.Consequent(np.arange(0, 10.1, 0.1), 'Oxy')
+
+HR['low'] = fuzz.trimf(HR.universe,[50, 50, 60])
+HR['normal'] = fuzz.trimf(HR.universe,[60, 75, 100])
+HR['high'] = fuzz.trimf(HR.universe,[100, 130, 130])
+
+BP['low'] = fuzz.trimf(BP.universe,[80, 80, 90])
+BP['normal'] = fuzz.trimf(BP.universe,([90, 110, 110]))
+BP['high'] = fuzz.trimf(BP.universe,[110, 140, 140])
+
+BT['low'] = fuzz.trimf(BT.universe,[35, 35, 36])
+BT['normal'] = fuzz.trimf(BT.universe,[36, 37, 38])
+BT['high'] = fuzz.trimf(BT.universe,[38, 41, 41])
+
+OS['low'] = fuzz.trimf(OS.universe,[85, 85, 90])
+OS['normal'] = fuzz.trimf(OS.universe,[90, 95, 100])
+
+BSL['low'] = fuzz.trimf(BSL.universe,[60, 60, 70])
+BSL['normal'] = fuzz.trimf(BSL.universe,[70, 100, 140])
+BSL['high'] = fuzz.trimf(BSL.universe,[140, 200, 200])
+
+Lieu['d'] = fuzz.trimf(Lieu.universe,[0,0,3])
+Lieu['m'] = fuzz.trimf(Lieu.universe,[3, 5, 7])
+Lieu['i'] = fuzz.trimf(Lieu.universe,[7, 10, 10])
+
+Mach['r'] = fuzz.trimf(Mach.universe,[0,0,3])
+Mach['m'] = fuzz.trimf(Mach.universe,[3, 5, 7])
+Mach['i'] = fuzz.trimf(Mach.universe,[7, 10, 10])
+
+Oxy['r'] = fuzz.trimf(Oxy.universe,[0,0,3])
+Oxy['m'] = fuzz.trimf(Oxy.universe,[3, 5, 7])
+Oxy['i'] = fuzz.trimf(Oxy.universe,[7, 10, 10])
+
+rule1 = ctrl.Rule(HR['low'] & BP['low'], (Lieu['i'], Mach['i']))
+rule2 = ctrl.Rule(HR['high'] & BP['high'], (Lieu['d']))
+rule3 = ctrl.Rule(HR['normal'] & BP['normal'], (Lieu['m']))
+
+rule4= ctrl.Rule(BT['high'] & OS['low'], (Oxy['i'], Lieu['i']))
+rule5= ctrl.Rule(BT['normal'] & OS['normal'], (Oxy['m'], Lieu['m'], Mach['m']))
+rule6= ctrl.Rule(BT['low'] & OS['low'], (Oxy['i'], Lieu['i']))
+
+rule7= ctrl.Rule(BSL['low'], Lieu['i'])
+rule8= ctrl.Rule(BSL['low'], Lieu['d'])
+
+rule9= ctrl.Rule(BSL['high'] & HR['high'] & BP['high'], (Lieu['d']))
+rule10= ctrl.Rule(BSL['low'] & HR['low'] & BP['low'], (Lieu['i'], Mach['i'], Oxy['i']))
+rule11= ctrl.Rule(BSL['high'] & OS['normal'] & BP['high'], (Lieu['i'], Oxy['m']))
+
+ketqua_ctrl = ctrl.ControlSystem([rule1, rule2, rule3, rule4, rule5, rule6, rule7, rule8, rule9, rule10, rule11])
+ketqua = ctrl.ControlSystemSimulation(ketqua_ctrl)
+ketqua.input['Heart Rate'] = 75
+ketqua.input['Blood Pressure'] = 80
+ketqua.input['Body Temperature'] = 36
+ketqua.input['Oxygen Saturation'] = 88
+ketqua.input['Blood Sugar Level'] = 80
+
+ketqua.compute()
+
+print("Lieu:", ketqua.output['Lieu'])
+print("Mach:", ketqua.output['Mach'])
+print("Oxy:", ketqua.output['Oxy'])
+Lieu.view(sim=ketqua)
+Mach.view(sim=ketqua)
+Oxy.view(sim=ketqua)
+
+2.9
+
+import numpy as np
+import skfuzzy as fuzz
+from skfuzzy import control as ctrl
+
+SS = ctrl.Antecedent(np.arange(0, 1.1, 0.01), 'Sentiment Score')
+EI = ctrl.Antecedent(np.arange(0, 1.1, 0.1), 'Emotion Intensity')
+PW = ctrl.Antecedent(np.arange(0, 10, 0.1), 'Positive Words')
+NW = ctrl.Antecedent(np.arange(0, 10, 0.1), 'Negative Words')
+
+SC = ctrl.Consequent(np.arange(0, 1.1, 0.01), 'Sentiment Classification')
+
+SS['N']=fuzz.trimf(SS.universe, [0, 0, 0.3])
+SS['M']=fuzz.trimf(SS.universe, [0.3, 0.5, 0.7])
+SS['P']=fuzz.trimf(SS.universe, [0.7, 1, 1])
+
+EI['L']=fuzz.trimf(EI.universe, [0, 0, 0.3])
+EI['M']=fuzz.trimf(EI.universe, [0.3, 0.5, 0.7])
+EI['H']=fuzz.trimf(EI.universe, [0.7, 1, 1])
+
+PW['F']=fuzz.trimf(PW.universe, [0, 0, 3])
+PW['S']=fuzz.trimf(PW.universe, [3, 5, 7])
+PW['M']=fuzz.trimf(PW.universe, [7, 10, 10])
+
+
+PW['F']=fuzz.trimf(PW.universe, [0, 0, 3])
+PW['S']=fuzz.trimf(PW.universe, [3, 5, 7])
+PW['M']=fuzz.trimf(PW.universe, [7, 10, 10])
+
+SC['N']=fuzz.trimf(SC.universe, [0, 0, 3])
+SC['M']=fuzz.trimf(SC.universe, [3, 5, 7])
+SC['P']=fuzz.trimf(SC.universe, [7, 10, 10])
+
+rule1 = ctrl.Rule(SS['N']&EI['H'], SC ['N'])
+rule2 = ctrl.Rule(SS['N']&EI['L'], SC ['M'])
+rule3 = ctrl.Rule(SS['M']&EI['M'], SC ['M'])
+rule4 = ctrl.Rule(SS['P']&EI['H'], SC ['P'])
+rule5 = ctrl.Rule(PW['M']&PW['F'], SC ['P'])
+rule6 = ctrl.Rule(PW['F']&PW['M'], SC ['N'])
+rule7 = ctrl.Rule(PW['S']&PW['S'], SC ['M'])
+rule8 = ctrl.Rule(SS['N']&PW['M']&EI['H'], SC ['N'])
+rule9 = ctrl.Rule(SS['M']&PW['S']&EI['M'], SC ['M'])
+rule10 = ctrl.Rule(SS['P']&PW['M']&EI['H'], SC ['P'])
+
+tipping_ctrl = ctrl.ControlSystem([rule1, rule2, rule3, rule4, rule5, rule6, rule7, rule8, rule9, rule10])
+tipping = ctrl.ControlSystemSimulation(tipping_ctrl)
+tipping.input['Sentiment Score'] = 0.2
+tipping.input['Emotion Intensity'] = 0.8
+tipping.input['Positive Words'] = 2
+tipping.input['Positive Words'] = 8
+tipping.compute()
+print(tipping.output['Sentiment Classification'])
+SC.view(sim=tipping)
+
+2.10
+
+import numpy as np
+import skfuzzy as fuzz
+from skfuzzy import control as ctrl
+
+TC = ctrl.Antecedent(np.arange(0, 10.1, 0.1), 'Traffic Condition')
+DC = ctrl.Antecedent(np.arange(0, 10.1, 0.1), 'Distance to Customer')
+WC = ctrl.Antecedent(np.arange(0, 10.1, 0.1), 'Weather Condition')
+OPT = ctrl.Antecedent(np.arange(0, 20.1, 0.1), 'Order Preparation Time')
+DFL = ctrl.Antecedent(np.arange(0, 10.1, 0.1), 'Driver Fatigue Level')
+
+
+EDT = ctrl.Consequent(np.arange(5, 30, 0.1), 'Estimated Delivery Time')
+IB = ctrl.Consequent(np.arange(0, 10.1, 0.1), 'Incentive Bonus')
+DPR = ctrl.Consequent(np.arange(0, 5.1, 0.1), 'Driver Performance Rating')
+
+TC['L']=fuzz.gaussmf(TC.universe, 0, 1)
+TC['M']=fuzz.gaussmf(TC.universe, 5, 2.5)
+TC['H']=fuzz.gaussmf(TC.universe, 8, 1)
+
+DC['S']=fuzz.gaussmf(DC.universe, 0, 2.5)
+DC['M']=fuzz.gaussmf(DC.universe, 5, 2)
+DC['L']=fuzz.gaussmf(DC.universe, 8, 1)
+
+WC['C']=fuzz.gaussmf(WC.universe, 0, 1.5)
+WC['R']=fuzz.gaussmf(WC.universe, 5, 2)
+WC['S']=fuzz.gaussmf(WC.universe, 8, 2)
+
+OPT['F']=fuzz.gaussmf(OPT.universe, 0, 4.3)
+OPT['M']=fuzz.gaussmf(OPT.universe, 9, 3)
+OPT['S']=fuzz.gaussmf(OPT.universe, 20, 4.5)
+
+DFL['L']=fuzz.gaussmf(DFL.universe, 0, 1)
+DFL['M']=fuzz.gaussmf(DFL.universe, 5, 1.5)
+DFL['H']=fuzz.gaussmf(DFL.universe, 9, 1)
+
+EDT['S']=fuzz.gaussmf(EDT.universe, 5, 3)
+EDT['M']=fuzz.gaussmf(EDT.universe, 15, 5)
+EDT['L']=fuzz.gaussmf(EDT.universe, 25, 3.
+
+IB['L']=fuzz.gaussmf(IB.universe, 0, 1)
+IB['M']=fuzz.gaussmf(IB.universe, 5, 1.5)
+IB['H']=fuzz.gaussmf(IB.universe, 10, 2)
+
+DPR['P']=fuzz.gaussmf(DPR.universe, 0, 0.5)
+DPR['A']=fuzz.gaussmf(DPR.universe, 3, 0.
+DPR['E']=fuzz.gaussmf(DPR.universe, 5, 1.1)
+
+rule1 = ctrl.Rule(TC['L']&DC['S'], EDT ['S'])
+rule2 = ctrl.Rule(TC['M']&DC['M'], EDT ['M'])
+rule3 = ctrl.Rule(TC['H']&DC['L'], EDT ['L'])
+rule4 = ctrl.Rule(WC['C'], IB ['L'])
+rule5 = ctrl.Rule(WC['R'], IB ['M'])
+rule6 = ctrl.Rule(WC['S'], IB ['H'])
+rule7 = ctrl.Rule(TC['L']&OPT['F'], EDT ['S'])
+rule8 = ctrl.Rule(TC['M']&OPT['M'], EDT ['M'])
+rule9 = ctrl.Rule(TC['H']&OPT['S'], EDT ['L'])
+rule10 = ctrl.Rule(DFL['L'], DPR ['E'])
+rule11 = ctrl.Rule(DFL['M'], DPR ['A'])
+rule12 = ctrl.Rule(DFL['H'], DPR ['P'])
+rule13 = ctrl.Rule(DC['L']&WC['S']&TC['H'], IB['H'], EDT['L'])
+rule14 = ctrl.Rule(DC['S']&WC['C']&TC['L'], IB['L'], EDT['S'])
+rule15 = ctrl.Rule(DFL['H']&TC['H'], DPR['P'], EDT['L'])
+
+dpr_ctrl = ctrl.ControlSystem([rule1,rule2,rule3,rule4,rule5,rule6,rule7,rule8,rule9,rule10,rule11,rule12,rule13, rule14, rule15])
+dpr = ctrl.ControlSystemSimulation(dpr_ctrl)
+dpr.input['Traffic Condition'] = 9
+dpr.input['Distance to Customer'] = 7
+dpr.input['Weather Condition'] = 8
+dpr.input['Order Preparation Time'] = 15
+dpr.input['Driver Fatigue Level'] = 7
+dpr.compute()
+print(dpr.output['Driver Performance Rating'])
+IB.view(sim=dpr)
+EDT.view(sim=dpr)
+DPR.view(sim=dpr)
